@@ -89,6 +89,7 @@ const select = {
       thisProduct.formInputs = thisProduct.form.querySelectorAll(select.all.formInputs);
       thisProduct.cartButton = thisProduct.element.querySelector(select.menuProduct.cartButton);
       thisProduct.priceElem = thisProduct.element.querySelector(select.menuProduct.priceElem);
+      thisProduct.imageWrapper = thisProduct.element.querySelector(select.menuProduct.imageWrapper); 
     }
 
     initAccordion(){
@@ -164,17 +165,23 @@ const select = {
           // czy w tablicy zapisanej pod tym kluczem znajduje się klucz opcji (wspomniana wcześniej metoda (includes)).
           const isOptionSelected = formData[paramId] && formData[paramId].includes(optionId);
           const isOptionDefault = option.default === true;
+          const imgSelector = thisProduct.imageWrapper.querySelector('.' + paramId + '-' + optionId);
 
           // sprawdzić czy opcja jest default i czy jest zaznaczone -> podnieść cene
           if(isOptionSelected && !isOptionDefault){
             price += option.price;
           }
-
-
           // sprawdzić czy opcja default jest odznaczona -> zmniejszyć cenę
            else if(!isOptionSelected && isOptionDefault){
             price -= option.price;
           }
+
+          if(isOptionSelected && imgSelector){
+            imgSelector.classList.add(classNames.menuProduct.imageVisible);
+          } else if(!isOptionSelected && imgSelector){
+            imgSelector.classList.remove(classNames.menuProduct.imageVisible);
+          }
+
         }
       }
 
