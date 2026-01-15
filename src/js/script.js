@@ -375,14 +375,16 @@ const templates = {
 
     getElements(element){
       const thisCart = this;
+      thisCart.deliveryFee = settings.cart.deliveryFee;
       thisCart.dom = {};
       thisCart.dom.wrapper = element;
       thisCart.dom.toggleTrigger = thisCart.dom.wrapper.querySelector(select.cart.toggleTrigger);
       thisCart.dom.productList = thisCart.dom.wrapper.querySelector(select.cart.productList);
       thisCart.dom.deliveryFeeElem = thisCart.dom.wrapper.querySelector(select.cart.deliveryFee);
       thisCart.dom.subtotalPriceElem = thisCart.dom.wrapper.querySelector(select.cart.subtotalPrice);
-      thisCart.dom.totalPriceElem = thisCart.dom.wrapper.querySelector(select.cart.totalPrice);
+      thisCart.dom.totalPriceElems = thisCart.dom.wrapper.querySelectorAll(select.cart.totalPrice);
       thisCart.dom.totalNumberElem = thisCart.dom.wrapper.querySelector(select.cart.totalNumber);
+      thisCart.dom.form = thisCart.dom.wrapper.querySelector(select.cart.form);
     }
 
     initActions(){
@@ -398,6 +400,11 @@ const templates = {
 
       thisCart.dom.productList.addEventListener('remove', function(){
         thisCart.remove(event.detail.cartProduct);
+      })
+
+      thisCart.dom.form.addEventListener('submit', function(){
+        event.preventDefault();
+        thisCart.sendOrder();
       })
     }
 
@@ -418,34 +425,35 @@ const templates = {
 
     update(){
       const thisCart = this;
-      const deliveryFee = settings.cart.deliveryFee;
-      let totalNumber = settings.cart.totalNumber;
-      let subtotalPrice = settings.cart.subtotalPrice;
+      thisCart.totalNumber = settings.cart.totalNumber;
+      thisCart.subtotalPrice = settings.cart.subtotalPrice;
 
       if(thisCart.dom.totalNumberElem.value > 0){
-        totalNumber = thisCart.dom.totalNumberElem.value;
+        thisCart.totalNumber = thisCart.dom.totalNumberElem.value;
       }
       if(thisCart.dom.subtotalPriceElem.value > 0){
-        subtotalPrice = thisCart.dom.subtotalPriceElem.value;
+        thisCart.subtotalPrice = thisCart.dom.subtotalPriceElem.value;
       }
 
 
       for(let product of thisCart.products){
-        totalNumber += product.amount;
-        subtotalPrice += product.amount * product.priceSingle;
+        thisCart.totalNumber += product.amount;
+        thisCart.subtotalPrice += product.amount * product.priceSingle;
       }
 
-      if(totalNumber > 0){
-        thisCart.totalPrice = subtotalPrice + deliveryFee;
-        thisCart.dom.deliveryFeeElem.innerHTML = deliveryFee;
+      if(thisCart.totalNumber > 0){
+        thisCart.totalPrice = thisCart.subtotalPrice + thisCart.deliveryFee;
+        thisCart.dom.deliveryFeeElem.innerHTML = thisCart.deliveryFee;
       } else {
         thisCart.totalPrice = 0;
         thisCart.dom.deliveryFeeElem.innerHTML = 0;
       }
 
-      thisCart.dom.totalNumberElem.innerHTML= totalNumber;
-      thisCart.dom.subtotalPriceElem.innerHTML = subtotalPrice;
-      thisCart.dom.totalPriceElem.innerHTML = thisCart.totalPrice;
+      thisCart.dom.totalNumberElem.innerHTML= thisCart.totalNumber;
+      thisCart.dom.subtotalPriceElem.innerHTML = thisCart.subtotalPrice;
+      thisCart.dom.totalPriceElems.forEach(elem => {
+        elem.innerHTML = thisCart.totalPrice;
+      });
     }
 
     remove(cartProduct){
@@ -458,6 +466,39 @@ const templates = {
       //call update
       thisCart.update();
     }
+
+    sendOrder(){
+      const thisCart = this;
+
+      const url = settings.db.url + '/' + settings.db.orders;
+      const payload = {};
+      payload.address = thisCart.dom.form.querySelector('input[name="address"]').value;
+      payload.phone = thisCart.dom.form.querySelector('input[name="phone"]').value;
+      payload.totalPrice = thisCart.totalPrice;
+      payload.subtotalPrice = thisCart.subtotalPrice;
+      payload.totalNumber = thisCart.totalNumber;
+      payload.deliveryFee = thisCart.deliveryFee;
+      payload.products = [];
+
+      for(let prod of thisCart.products) {
+        payload.products.push(prod.getData());
+      }
+
+      const options = { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      };
+
+      fetch(url, options)
+        .then(function(response){
+          return response.json();
+        }).then(function(parsedResponse){
+          console.log('parsedResponse', parsedResponse);
+        });
+    }
   }
 
   class CartProduct{
@@ -466,7 +507,10 @@ const templates = {
       const thisCartProduct = this;
       thisCartProduct.id = menuProduct.id;
       thisCartProduct.amount = menuProduct.amount;
+      thisCartProduct.price = menuProduct.price;
+      thisCartProduct.name = menuProduct.name;
       thisCartProduct.priceSingle = menuProduct.priceSingle;
+      thisCartProduct.params = menuProduct.params;
       thisCartProduct.getElements(element);
       thisCartProduct.initAmountWidget();
       thisCartProduct.initActions();
@@ -530,6 +574,19 @@ const templates = {
         thisCartProduct.remove();
       });
     }
+
+    getData(){
+      const thisCartProduct = this;
+      let productData = {};
+      productData.id = thisCartProduct.id;
+      productData.amount = thisCartProduct.amount;
+      productData.price = thisCartProduct.price;
+      productData.priceSingle = thisCartProduct.priceSingle;
+      productData.name = thisCartProduct.name;
+      productData.params = thisCartProduct.params;
+
+      return productData;
+    }
   }
 
   const app = {
@@ -552,7 +609,7 @@ const templates = {
       const thisApp = this;
       thisApp.data = {};
       const url = settings.db.url + '/' + settings.db.products;
-      
+
       fetch(url)
         .then(function(rawResponse){
           return rawResponse.json();
