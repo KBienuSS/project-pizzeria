@@ -33,7 +33,7 @@ class CartProduct{
     thisCartProduct.amountWidget = new AmountWidget(thisCartProduct.dom.amountWidgetElem);
     thisCartProduct.dom.amountWidgetElem.addEventListener('updated', function(){
       thisCartProduct.updateTotalPriceOfProduct();
-    })
+    });
   }
   
   updateTotalPriceOfProduct(){
