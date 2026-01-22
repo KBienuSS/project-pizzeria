@@ -9,6 +9,20 @@ const app = {
     new Booking(tableWidget);
   },
 
+  homePageButtons(){
+    const thisApp = app;
+    thisApp.orderButtonMainPage = document.querySelector('.order-main-container');
+    thisApp.bookingButtonMainPage = document.querySelector('.booking-main-container');
+
+    thisApp.orderButtonMainPage.addEventListener('click', function(){
+      thisApp.activatepage('order');
+    });
+
+    thisApp.bookingButtonMainPage.addEventListener('click', function(){
+      thisApp.activatepage('booking');
+    })
+  },
+
   initPages: function(){
     const thisApp = this;
     thisApp.pages = document.querySelector(select.containerOf.pages).children;
@@ -35,6 +49,7 @@ const app = {
         const id = clickedElement.getAttribute('href').replace('#','');
         // run thisApp.activatePage with that id
         thisApp.activatepage(id);
+        console.log(id);
 
         //change url hash
         window.location.hash ='#/'+id;
@@ -100,6 +115,7 @@ const app = {
     thisApp.initData();
     thisApp.initCart();
     thisApp.initBooking();
+    thisApp.homePageButtons();
   },
 };
 
